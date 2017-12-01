@@ -1,71 +1,65 @@
-
-import os
-import glob
-
-data_path = 'tasks_1-20_v1-2'
-
 class TaskData(object):
-    
-    def __init__(self, taskname, language_class='en-10k'):
-        path = '{}/{}/'.format(data_path, language_class)
 
-        train_file = glob.glob('{}*_{}_train.txt'.format(path, taskname))[0]
-        test_file = glob.glob('{}*_{}_test.txt'.format(path, taskname))[0]
+    def __init__(self, task, language):
+        train_filename = 'data/{}/qa{}_train.txt'.format(language, task)
+        valid_filename = 'data/{}/qa{}_valid.txt'.format(language, task)
+        test_filename = 'data/{}/qa{}_test.txt'.format(language, task)
 
-        self.train_stories, self.train_answers = self.parse_data(train_file)
-        self.test_stories,  self.test_answers = self.parse_data(test_file)
+        self.train_data = self.parse_data(train_filename)
+        self.valid_data = self.parse_data(valid_filename)
+        self.test_data = self.parse_data(test_filename)
 
-        self.current_train_sample = 0
 
-    def get_train(self):
-        return self.train_stories, self.train_answers
+    @staticmethod
+    def parse_data(filename):
+        with open(filename) as f:
+            data = []
+            story = []
+            answers = []
 
-    def get_test(self):
-        return self.test_stories, self.test_answers
+            for line in f:
+                if '?' in line:
+                    _, question, answer, _ = TaskData.parse_question(line)
+                    answers.append(answer)
+                    story.extend(question)
+                else:
+                    number, line = TaskData.parse_statement(line)
+                    story.extend(line)
+                    if number == 1 and answers:
+                        data.append((story, answers))
+                        story = []
+                        answers = []
 
-    def parse_data(self, filename): 
-        lines = open(filename, 'r').read().splitlines()
+            return data
 
-        stories = []
-        answers = []
-        story_buffer = []
-        question_buffer = []
-        answer_buffer = []
-        
-        last_number = 0
-        for line in lines:
 
-            start = line.find(' ')
-            number = int(line[:start])
-            line = line[start + 1:]
+    @staticmethod
+    def parse_statement(line):
+        ''' split a statement into id number and sentence '''
+        line = line.rstrip('\n.').split('\t')[0]
+        num, *statement = line.split()
+        statement.append('.')
+        num = int(num)
+        return num, statement
 
-            if number == 1:
-                stories.append(question_buffer)
-                answers.append(answer_buffer)
-                story_buffer = []
-                question_buffer = []
-                answer_buffer = []
 
-            #question line
-            if '\t' in line:
-                line = line.split('\t')
-                answer_buffer.append(line[1])
-                story_buffer.append(line[0])
+    @staticmethod
+    def parse_question(line):
+        ''' split a question into id number, question, answer, and hints '''
+        question, answer, hints = line.rstrip('\n').split('\t')
+        question = question.rstrip(' ?')
+        num, *question = question.split()
+        question.append('?')
+        num = int(num)
+        hints = hints.split()
+        hints = [int(x) for x in hints]
+        return num, question, answer, hints
 
-                question_buffer.append(story_buffer)
-                story_buffer = []
-
-            else:
-                story_buffer.append(line)
-
-        #remove first element in the list, since it is empty
-        return stories[1:], answers[1:]
-
-                
 
 
 if __name__ == '__main__':
-    data = TaskData('single-supporting-fact')
-    stories, answers = data.get_train() 
-    print(stories[0])
-    print(answers[0])
+    my_data = TaskData(1, 'english')
+    my_story, my_answer = my_data.train_data[0]
+    print(my_story)
+    print()
+    print(my_answer)
