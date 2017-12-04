@@ -33,6 +33,12 @@ class LSTM(object):
 
         self.trainer = dy.SimpleSGDTrainer(self.pc)
 
+    def save(self, path):
+        self.pc.save(path)
+
+    def load(self, path):
+        self.pc.populate(path)
+
     def read(self, word_vector):
         self.input_word.set(word_vector)
         self.current_state = self.current_state.add_input(self.input_word)
@@ -46,6 +52,11 @@ class LSTM(object):
         loss_val = total_loss.value()
         self.loss_buffer = []
 
+        self.reset()
+
+        return loss_val
+
+    def reset(self):
         dy.renew_cg()
         self.current_state = self.builder.initial_state()
         self.input_word = dy.vecInput(100)
@@ -53,17 +64,42 @@ class LSTM(object):
         self.W = dy.parameter(self.params["W"])
         self.bias = dy.parameter(self.params["bias"])
 
-        return loss_val
-
-
     def answer(self):
-        return dy.softmax(self.W*self.current_state.output() + self.bias)
+        return self.W*self.current_state.output() + self.bias
 
     def train(self, actual):
         prediction = self.answer()
         self.actual_word.set(actual)
         self.loss_buffer.append( dy.huber_distance(prediction, self.actual_word))
-    
+
+def evaluate(model, data):
+    test_len = len(data)
+    total = 0.0
+    correct = 0.0
+    j = 0
+    for story, answers in data:
+        print('{}/{}'.format(j, test_len), end='\r')
+        j += 1
+        current_answer = 0
+        for word in story:
+            model.read(embedding[word])
+
+            if word == '?':
+                prediction_vector = np.array(model.answer().value())
+                prediction = embedding.wv.most_similar(positive=[prediction_vector], negative=[])[0][0]
+
+                ans = answers[current_answer]
+                current_answer += 1
+
+                total += 1.0
+                if ans == prediction:
+                    correct += 1.0
+
+            model.reset()
+
+    succes_rate = correct/total
+    return succes_rate
+
 
 if __name__ == '__main__':
 
@@ -93,32 +129,13 @@ if __name__ == '__main__':
             epoch_loss.append(model.flush())
 
         loss = sum(epoch_loss) / len(epoch_loss)
+
         print('Epoch: {} Loss: {}'.format(epoch, loss))
+        validation_rate = evaluate(model, data.valid_data)
+        print('Validation Success Rate: {}'.format(validation_rate))
 
-    
-    test_len = len(data.test_data)
-    total = 0.0
-    correct = 0.0
-    j = 0
-    for story, answers in data.test_data:
-        print('{}/{}'.format(j, test_len), end='\r')
-        j += 1
-        current_answer = 0
-        for word in story:
-            model.read(embedding[word])
+        model.save('saved_models/epoch-{}'.format(epoch))
 
-            if word == '?':
-                prediction_vector = np.array(model.answer().value())
-                prediction = embedding.wv.most_similar(positive=[prediction_vector], negative=[])[0][0]
+    test_rate = evaluate(model, data.test_data)
 
-                ans = answers[current_answer]
-                current_answer += 1
-
-                total += 1.0
-                print('{} {}'.format(ans, prediction))
-                if ans == prediction:
-                    correct += 1.0
-
-    print(correct/total)
-
-
+    print('Test Success Rate: {}'.format(test_rate))
