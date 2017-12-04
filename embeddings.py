@@ -8,6 +8,9 @@ import os
 
 data_path = 'data/'
 
+def load_embedding(tasknumber, language):
+    return gensim.models.Word2Vec.load('embeddings/{}/qa{}'.format(language, tasknumber))
+
 def tokenize(line):
     line = line.split()[1:]
 
@@ -35,12 +38,15 @@ def create_embedding(language, tasknumber):
 
 
 
-lang_class = [d for d in os.listdir(data_path) if os.path.isdir(data_path + d) ]
 
-for language in lang_class:
-    os.mkdir('embeddings/' + language)
-    for i in range(1, 21):
-        create_embedding(language, i)
+if __name__ == '__main__':
+
+    lang_class = [d for d in os.listdir(data_path) if os.path.isdir(data_path + d) ]
+
+    for language in lang_class:
+        os.mkdir('embeddings/' + language)
+        for i in range(1, 21):
+            create_embedding(language, i)
 
 
 
