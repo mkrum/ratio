@@ -7,9 +7,9 @@ class LSTM(object):
 
     def __init__(self):
 
-        NUM_LAYERS = 4
+        NUM_LAYERS = 3
         INPUT_DIM = 100
-        HIDDEN_DIM = 256
+        HIDDEN_DIM = 64
 
         WORD_VEC_DIM = 100
 
@@ -44,14 +44,9 @@ class LSTM(object):
         self.current_state = self.current_state.add_input(self.input_word)
 
     def flush(self):
-
         total_loss = dy.esum(self.loss_buffer)
-
-        total_loss.backward()
-        self.trainer.update()
         loss_val = total_loss.value()
         self.loss_buffer = []
-
         self.reset()
         return loss_val
 
@@ -63,15 +58,19 @@ class LSTM(object):
         self.W = dy.parameter(self.params["W"])
         self.bias = dy.parameter(self.params["bias"])
 
-
-
     def answer(self):
-        return self.W*self.current_state.output() + self.bias
+        return self.W * self.current_state.output() + self.bias
 
     def train(self, actual):
         prediction = self.answer()
         self.actual_word.set(actual)
         self.loss_buffer.append( dy.huber_distance(prediction, self.actual_word))
+        loss = dy.huber_distance(prediction, self.actual_word)
+
+        self.loss_buffer.append(loss)
+
+        loss.backward()
+        self.trainer.update()
 
 def evaluate(model, data):
     test_len = len(data)
@@ -96,7 +95,7 @@ def evaluate(model, data):
                 if ans == prediction:
                     correct += 1.0
 
-            model.reset()
+        model.reset()
 
     succes_rate = correct/total
     return succes_rate
@@ -110,10 +109,12 @@ if __name__ == '__main__':
     
     train_len = len(data.train_data)
 
-    for epoch in range(10):
+    for epoch in range(100):
         epoch_loss = []
         
         j = 0
+        total = 0.0
+        correct = 0.0
         for story, answers in data.train_data:
             j += 1
             print('{}/{}'.format(j, train_len), end='\r')
@@ -127,16 +128,22 @@ if __name__ == '__main__':
                     current_answer += 1
                     model.train(embedding[ans])
 
+                    prediction_vector = np.array(model.answer().value())
+                    prediction = embedding.wv.most_similar(positive=[prediction_vector], negative=[])[0][0]
+
+                    total += 1.0
+                    if ans == prediction:
+                        correct += 1.0
+        
             epoch_loss.append(model.flush())
 
         loss = sum(epoch_loss) / len(epoch_loss)
-
+        print(correct/total)
         print('Epoch: {} Loss: {}'.format(epoch, loss))
         validation_rate = evaluate(model, data.valid_data)
-        print('Validation Success Rate: {}'.format(validation_rate))
 
-        model.save('saved_models/epoch-{}'.format(epoch))
+        print('Validation Success Rate: {}'.format(validation_rate))
+        model.save('saved_models/rnn/epoch-{}'.format(epoch))
 
     test_rate = evaluate(model, data.test_data)
-
     print('Test Success Rate: {}'.format(test_rate))

@@ -47,8 +47,6 @@ class LSTM(object):
 
         total_loss = dy.esum(self.loss_buffer)
 
-        total_loss.backward()
-        self.trainer.update()
         loss_val = total_loss.value()
         self.loss_buffer = []
 
@@ -71,6 +69,12 @@ class LSTM(object):
         prediction = self.answer()
         self.actual_word.set(actual)
         self.loss_buffer.append( dy.huber_distance(prediction, self.actual_word))
+        loss = dy.huber_distance(prediction, self.actual_word)
+
+        self.loss_buffer.append(loss)
+
+        loss.backward()
+        self.trainer.update()
 
 def evaluate(model, data):
     test_len = len(data)
@@ -109,7 +113,7 @@ if __name__ == '__main__':
     
     train_len = len(data.train_data)
 
-    for epoch in range(10):
+    for epoch in range(100):
         epoch_loss = []
         
         j = 0
@@ -134,7 +138,7 @@ if __name__ == '__main__':
         validation_rate = evaluate(model, data.valid_data)
         print('Validation Success Rate: {}'.format(validation_rate))
 
-        model.save('saved_models/epoch-{}'.format(epoch))
+        model.save('saved_models/lstm/epoch-{}'.format(epoch))
 
     test_rate = evaluate(model, data.test_data)
 
