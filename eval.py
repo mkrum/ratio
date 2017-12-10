@@ -60,8 +60,7 @@ data = dh.TaskData(1, 'english')
 embedding = emb.load_embedding(1, 'english')  
    
 #set train length to 1000
-train_len = 1000
-batch_size = 10
+train_len = 1500
 
 for epoch in range(1000):
     epoch_loss = []
@@ -94,9 +93,8 @@ for epoch in range(1000):
                 if ans == prediction:
                     correct += 1.0
     
-            if model.batch_size() >= 10:
-                story_loss = model.backprop()
-                epoch_loss.append(story_loss)
+        story_loss = model.backprop()
+        epoch_loss.append(story_loss)
 
         model.reset()
 

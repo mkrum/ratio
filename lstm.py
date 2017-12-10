@@ -31,7 +31,7 @@ class LSTM(object):
         self.params["word_vec_dim"] = 10
         self.reset()
 
-        self.trainer = dy.MomentumSGDTrainer(self.pc, learning_rate=1E-3)
+        self.trainer = dy.AdamTrainer(self.pc)
 
     def save(self, path):
         self.pc.save(path)
@@ -44,11 +44,10 @@ class LSTM(object):
         self.current_state = self.current_state.add_input(self.input_word)
 
     def backprop(self):
-        loss_val = sum(self.loss_buffer) / float(len(self.loss_buffer))
+        total_loss = dy.esum(self.loss_buffer)
+        loss_val = total_loss.value()
 
-        self.loss.set([loss_val])
-
-        self.loss.backward()
+        total_loss.backward()
         self.trainer.update()
 
         self.loss_buffer = []
@@ -73,7 +72,8 @@ class LSTM(object):
     def train(self, actual):
         prediction = self.answer()
         self.actual_word.set(actual)
-        self.loss_buffer.append( dy.l1_distance(prediction, self.actual_word).value() )
+
+        self.loss_buffer.append( dy.l1_distance(prediction, self.actual_word) )
 
     def batch_size(self):
         return len(self.loss_buffer)
