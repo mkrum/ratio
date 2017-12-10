@@ -8,30 +8,30 @@ class LSTM(object):
     def __init__(self):
 
         NUM_LAYERS = 4
-        INPUT_DIM = 100
-        HIDDEN_DIM = 256
+        HIDDEN_DIM = 128
+        FLAT_HIDDEN = 64
 
-        WORD_VEC_DIM = 100
+        WORD_VEC_DIM = 10
 
         self.pc = dy.ParameterCollection()
-        self.builder = dy.LSTMBuilder(NUM_LAYERS, INPUT_DIM, HIDDEN_DIM, self.pc)
+        self.builder = dy.LSTMBuilder(NUM_LAYERS, WORD_VEC_DIM, HIDDEN_DIM, self.pc)
 
-        self.input_word = dy.vecInput(100)
 
         self.current_state = self.builder.initial_state()
         self.loss_buffer = []
 
         self.params = {}
-        self.params["W"] = self.pc.add_parameters((WORD_VEC_DIM, HIDDEN_DIM))
-        self.params["bias"] = self.pc.add_parameters((WORD_VEC_DIM))
 
-        self.W = dy.parameter(self.params["W"])
-        self.bias = dy.parameter(self.params["bias"])
+        self.params["W_1"] = self.pc.add_parameters((FLAT_HIDDEN, HIDDEN_DIM))
+        self.params["W_2"] = self.pc.add_parameters((WORD_VEC_DIM, FLAT_HIDDEN))
 
-        self.input_word = dy.vecInput(100)
-        self.actual_word = dy.vecInput(100)
+        self.params["bias_1"] = self.pc.add_parameters((FLAT_HIDDEN))
+        self.params["bias_2"] = self.pc.add_parameters((WORD_VEC_DIM))
 
-        self.trainer = dy.SimpleSGDTrainer(self.pc)
+        self.params["word_vec_dim"] = 10
+        self.reset()
+
+        self.trainer = dy.MomentumSGDTrainer(self.pc, learning_rate=1E-5)
 
     def save(self, path):
         self.pc.save(path)
@@ -43,103 +43,38 @@ class LSTM(object):
         self.input_word.set(word_vector)
         self.current_state = self.current_state.add_input(self.input_word)
 
-    def flush(self):
+    def backprop(self):
+        loss_val = sum(self.loss_buffer)
 
-        total_loss = dy.esum(self.loss_buffer)
+        self.loss.set([loss_val])
 
-        loss_val = total_loss.value()
         self.loss_buffer = []
-
-        self.reset()
+        self.loss.backward()
+        self.trainer.update()
 
         return loss_val
 
     def reset(self):
         dy.renew_cg()
         self.current_state = self.builder.initial_state()
-        self.input_word = dy.vecInput(100)
-        self.actual_word = dy.vecInput(100)
-        self.W = dy.parameter(self.params["W"])
-        self.bias = dy.parameter(self.params["bias"])
+        self.input_word = dy.vecInput(self.params['word_vec_dim'])
+        self.actual_word = dy.vecInput(self.params['word_vec_dim'])
+        self.loss = dy.vecInput(1)
+
+        self.W_1 = dy.parameter(self.params["W_1"])
+        self.bias_1 = dy.parameter(self.params["bias_1"])
+
+        self.W_2 = dy.parameter(self.params["W_2"])
+        self.bias_2 = dy.parameter(self.params["bias_2"])
 
     def answer(self):
-        return self.W*self.current_state.output() + self.bias
+        return self.W_2 * (self.W_1 * self.current_state.output() + self.bias_1) + self.bias_2
 
     def train(self, actual):
         prediction = self.answer()
         self.actual_word.set(actual)
-        self.loss_buffer.append( dy.huber_distance(prediction, self.actual_word))
-        loss = dy.huber_distance(prediction, self.actual_word)
+        self.loss_buffer.append( dy.l1_distance(prediction, self.actual_word).value() )
 
-        self.loss_buffer.append(loss)
+    def batch_size(self):
+        return len(self.loss_buffer)
 
-        loss.backward()
-        self.trainer.update()
-
-def evaluate(model, data):
-    test_len = len(data)
-    total = 0.0
-    correct = 0.0
-    j = 0
-    for story, answers in data:
-        print('{}/{}'.format(j, test_len), end='\r')
-        j += 1
-        current_answer = 0
-        for word in story:
-            model.read(embedding[word])
-
-            if word == '?':
-                prediction_vector = np.array(model.answer().value())
-                prediction = embedding.wv.most_similar(positive=[prediction_vector], negative=[])[0][0]
-
-                ans = answers[current_answer]
-                current_answer += 1
-
-                total += 1.0
-                if ans == prediction:
-                    correct += 1.0
-
-            model.reset()
-
-    succes_rate = correct/total
-    return succes_rate
-
-
-if __name__ == '__main__':
-
-    model = LSTM()
-    data = dh.TaskData(1, 'english')
-    embedding = emb.load_embedding(1, 'english')  
-    
-    train_len = len(data.train_data)
-
-    for epoch in range(100):
-        epoch_loss = []
-        
-        j = 0
-        for story, answers in data.train_data:
-            j += 1
-            print('{}/{}'.format(j, train_len), end='\r')
-            
-            current_answer = 0
-            for word in story:
-                model.read(embedding[word])
-
-                if word == '?':
-                    ans = answers[current_answer]
-                    current_answer += 1
-                    model.train(embedding[ans])
-
-            epoch_loss.append(model.flush())
-
-        loss = sum(epoch_loss) / len(epoch_loss)
-
-        print('Epoch: {} Loss: {}'.format(epoch, loss))
-        validation_rate = evaluate(model, data.valid_data)
-        print('Validation Success Rate: {}'.format(validation_rate))
-
-        model.save('saved_models/lstm/epoch-{}'.format(epoch))
-
-    test_rate = evaluate(model, data.test_data)
-
-    print('Test Success Rate: {}'.format(test_rate))

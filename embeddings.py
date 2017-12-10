@@ -11,6 +11,10 @@ data_path = 'data/'
 def load_embedding(tasknumber, language):
     return gensim.models.Word2Vec.load('embeddings/{}/qa{}'.format(language, tasknumber))
 
+def vocab_size(tasknumber, language):
+    model = gensim.models.Word2Vec.load('embeddings/{}/qa{}'.format(language, tasknumber))
+    return len(model.wv.vocab) 
+
 def tokenize(line):
     line = line.split()[1:]
 
@@ -33,9 +37,8 @@ def create_embedding(language, tasknumber):
     for line in lines:
         sentences.append(tokenize(line))
 
-    model = gensim.models.Word2Vec(sentences, size=100, window=5, workers=4, min_count=0)
+    model = gensim.models.Word2Vec(sentences, size=10, window=5, workers=4, min_count=0)
     model.save('embeddings/{}/qa{}'.format(language, tasknumber))
-
 
 
 
