@@ -1,7 +1,4 @@
 import dynet as dy
-import datahandling as dh
-import embeddings as emb
-import numpy as np
 
 class LSTM(object):
 
@@ -74,7 +71,7 @@ class LSTM(object):
         prediction = self.answer()
 
         self.actual_word.set(actual)
-        loss = dy.squared_distance(prediction, self.actual_word) 
+        loss = dy.squared_distance(prediction, self.actual_word)
 
         loss.backward()
         self.trainer.update()
@@ -83,4 +80,3 @@ class LSTM(object):
 
     def batch_size(self):
         return len(self.loss_buffer)
-
