@@ -45,6 +45,7 @@ class LSTM(object):
 
     def backprop(self):
         total_loss = dy.esum(self.loss_buffer)
+
         loss_val = total_loss.value()
 
         total_loss.backward()
@@ -71,9 +72,14 @@ class LSTM(object):
 
     def train(self, actual):
         prediction = self.answer()
-        self.actual_word.set(actual)
 
-        self.loss_buffer.append( dy.l1_distance(prediction, self.actual_word) )
+        self.actual_word.set(actual)
+        loss = dy.squared_distance(prediction, self.actual_word) 
+
+        loss.backward()
+        self.trainer.update()
+
+        return loss.value()
 
     def batch_size(self):
         return len(self.loss_buffer)

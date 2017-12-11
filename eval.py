@@ -87,14 +87,14 @@ for epoch in range(1000):
                 prediction_vector = np.array(model.answer().value())
                 prediction = embedding.wv.most_similar(positive=[prediction_vector], negative=[])[0][0]
 
-                model.train(embedding[ans])
+                epoch_loss.append(model.train(embedding[ans]))
 
                 total += 1.0
                 if ans == prediction:
                     correct += 1.0
     
-        story_loss = model.backprop()
-        epoch_loss.append(story_loss)
+        #story_loss = model.backprop()
+        #epoch_loss.append(story_loss)
 
         model.reset()
 
