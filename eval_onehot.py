@@ -3,9 +3,9 @@ from collections import Counter
 import numpy as np
 from lstm import LSTM
 import datahandling as dh
-import embeddings as emb
+import onehot as oh
 
-def evaluate(model, data, embedding):
+def evaluate(model, data, one):
 
     predictions = Counter()
     occurances = Counter()
@@ -21,16 +21,15 @@ def evaluate(model, data, embedding):
 
         current_answer = 0
         for word in story:
-            model.read(embedding[word])
+            model.read(one.get_encoding(word))
             if word == '?':
                 ans = answers[current_answer]
 
                 occurances[ans] += 1
                 current_answer += 1
 
-                prediction_vector = np.array(model.answer().value())
-                prediction = embedding.wv.most_similar(positive=[prediction_vector],
-                                                       negative=[])[0][0]
+                prediction_vector = model.softmax_answer().value()
+                prediction = one.get_word(prediction_vector)
 
                 predictions[prediction] += 1
 
@@ -53,12 +52,11 @@ def evaluate(model, data, embedding):
     return succes_rate
 
 def main():
-    model = LSTM(10)
     data = dh.TaskData(1, 'english')
-    embedding = emb.load_embedding(1, 'english')
+    one = oh.Onehot([data])
+    model = LSTM(one.num_words)
 
-    #set train length to 1000
-    train_len = 1500
+    train_len = 100
 
     for epoch in range(1000):
         epoch_loss = []
@@ -76,17 +74,16 @@ def main():
 
             current_answer = 0
             for word in story:
-                model.read(embedding[word])
+                model.read(one.get_encoding(word))
 
                 if word == '?':
                     ans = answers[current_answer]
                     current_answer += 1
 
-                    prediction_vector = np.array(model.answer().value())
-                    prediction = embedding.wv.most_similar(positive=[prediction_vector],
-                                                           negative=[])[0][0]
+                    prediction_vector = model.softmax_answer().value()
+                    prediction = one.get_word(prediction_vector)
 
-                    epoch_loss.append(model.train(embedding[ans]))
+                    epoch_loss.append(model.train_softmax(one.get_encoding(ans)))
 
                     total += 1.0
                     if ans == prediction:
@@ -102,11 +99,11 @@ def main():
         loss = sum(epoch_loss) / len(epoch_loss)
         print('Epoch: {} Loss: {} Train Accuracy: {}'.format(epoch, loss, train_acc))
 
-        validation_rate = evaluate(model, data.valid_data, embedding)
+        validation_rate = evaluate(model, data.valid_data, one)
         print('Validation Success Rate: {}'.format(validation_rate))
-        model.save('saved_models/rnn/epoch-{}'.format(epoch))
+        model.save('saved_models/lstm/epoch-{}'.format(epoch))
 
-    test_rate = evaluate(model, data.test_data, embedding)
+    test_rate = evaluate(model, data.test_data, one)
     print('Test Success Rate: {}'.format(test_rate))
 
 

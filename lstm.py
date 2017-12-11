@@ -2,13 +2,13 @@ import dynet as dy
 
 class LSTM(object):
 
-    def __init__(self):
+    def __init__(self, dimension):
 
         NUM_LAYERS = 4
         HIDDEN_DIM = 128
         FLAT_HIDDEN = 64
 
-        WORD_VEC_DIM = 10
+        WORD_VEC_DIM = dimension
 
         self.pc = dy.ParameterCollection()
         self.builder = dy.LSTMBuilder(NUM_LAYERS, WORD_VEC_DIM, HIDDEN_DIM, self.pc)
@@ -25,7 +25,7 @@ class LSTM(object):
         self.params["bias_1"] = self.pc.add_parameters((FLAT_HIDDEN))
         self.params["bias_2"] = self.pc.add_parameters((WORD_VEC_DIM))
 
-        self.params["word_vec_dim"] = 10
+        self.params["word_vec_dim"] = dimension
         self.reset()
 
         self.trainer = dy.AdamTrainer(self.pc)
@@ -67,8 +67,22 @@ class LSTM(object):
     def answer(self):
         return self.W_2 * (self.W_1 * self.current_state.output() + self.bias_1) + self.bias_2
 
+    def softmax_answer(self):
+        return dy.softmax(self.answer())
+
     def train(self, actual):
         prediction = self.answer()
+
+        self.actual_word.set(actual)
+        loss = dy.squared_distance(prediction, self.actual_word)
+
+        loss.backward()
+        self.trainer.update()
+
+        return loss.value()
+
+    def train_softmax(self, actual):
+        prediction = self.softmax_answer()
 
         self.actual_word.set(actual)
         loss = dy.squared_distance(prediction, self.actual_word)
