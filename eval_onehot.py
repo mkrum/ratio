@@ -56,9 +56,9 @@ def main():
     one = oh.Onehot([data])
     model = LSTM(one.num_words)
 
-    train_len = 1000
+    train_len = 1500
 
-    for epoch in range(1000):
+    for epoch in range(5000):
         epoch_loss = []
 
         j = 0
@@ -98,10 +98,11 @@ def main():
 
         loss = sum(epoch_loss) / len(epoch_loss)
         print('Epoch: {} Loss: {} Train Accuracy: {}'.format(epoch, loss, train_acc))
-
-        validation_rate = evaluate(model, data.valid_data, one)
-        print('Validation Success Rate: {}'.format(validation_rate))
-        model.save('saved_models/lstm/epoch-{}'.format(epoch))
+        
+        if epoch % 10 == 0: 
+            validation_rate = evaluate(model, data.valid_data, one)
+            print('Validation Success Rate: {}'.format(validation_rate))
+            model.save('saved_models/lstm/epoch-{}'.format(epoch))
 
     test_rate = evaluate(model, data.test_data, one)
     print('Test Success Rate: {}'.format(test_rate))

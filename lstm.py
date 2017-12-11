@@ -5,8 +5,8 @@ class LSTM(object):
 
     def __init__(self, dimension):
 
-        NUM_LAYERS = 3
-        HIDDEN_DIM = 128
+        NUM_LAYERS = 4
+        HIDDEN_DIM = 100
         FLAT_HIDDEN = 64
 
         WORD_VEC_DIM = dimension
@@ -20,16 +20,14 @@ class LSTM(object):
 
         self.params = {}
 
-        self.params["W_1"] = self.pc.add_parameters((FLAT_HIDDEN, HIDDEN_DIM))
-        self.params["W_2"] = self.pc.add_parameters((WORD_VEC_DIM, FLAT_HIDDEN))
+        self.params["W_1"] = self.pc.add_parameters((WORD_VEC_DIM, HIDDEN_DIM))
 
-        self.params["bias_1"] = self.pc.add_parameters((FLAT_HIDDEN))
-        self.params["bias_2"] = self.pc.add_parameters((WORD_VEC_DIM))
+        self.params["bias_1"] = self.pc.add_parameters((WORD_VEC_DIM))
 
         self.params["word_vec_dim"] = dimension
         self.reset()
 
-        self.trainer = dy.MomentumSGDTrainer(self.pc, learning_rate=1E-5)
+        self.trainer = dy.MomentumSGDTrainer(self.pc, learning_rate=1E-2)
 
     def save(self, path):
         self.pc.save(path)
@@ -62,11 +60,9 @@ class LSTM(object):
         self.W_1 = dy.parameter(self.params["W_1"])
         self.bias_1 = dy.parameter(self.params["bias_1"])
 
-        self.W_2 = dy.parameter(self.params["W_2"])
-        self.bias_2 = dy.parameter(self.params["bias_2"])
 
     def answer(self):
-        return self.W_2 * (self.W_1 * self.current_state.output() + self.bias_1) + self.bias_2
+        return self.W_1 * self.current_state.output() + self.bias_1
 
     def softmax_answer(self):
         return dy.softmax(self.answer())
