@@ -3,7 +3,7 @@ import datahandling as dh
 import embeddings as emb
 import numpy as np
 
-class LSTM(object):
+class RNN(object):
 
     def __init__(self):
 

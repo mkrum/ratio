@@ -1,10 +1,8 @@
-
 import sys
-import gensim
 import string
 import glob
 import os
-
+import gensim
 
 data_path = 'data/'
 
@@ -13,7 +11,7 @@ def load_embedding(tasknumber, language):
 
 def vocab_size(tasknumber, language):
     model = gensim.models.Word2Vec.load('embeddings/{}/qa{}'.format(language, tasknumber))
-    return len(model.wv.vocab) 
+    return len(model.wv.vocab)
 
 def tokenize(line):
     line = line.split()[1:]
@@ -21,7 +19,7 @@ def tokenize(line):
     words = []
     for word in line:
         if len(word) > 0 and word[-1] in string.punctuation:
-            words += [word[:-1] , word[-1]]
+            words += [word[:-1], word[-1]]
         else:
             words += [word]
 
@@ -32,7 +30,7 @@ def create_embedding(language, tasknumber):
 
     files = glob.glob('{}/{}/qa{}_*.txt'.format(data_path, language, tasknumber))
     lines = sum(list(map(lambda x: open(x, 'r').read().splitlines(), files)), [])
-    
+
     sentences = []
     for line in lines:
         sentences.append(tokenize(line))
@@ -44,12 +42,9 @@ def create_embedding(language, tasknumber):
 
 if __name__ == '__main__':
 
-    lang_class = [d for d in os.listdir(data_path) if os.path.isdir(data_path + d) ]
+    lang_class = [d for d in os.listdir(data_path) if os.path.isdir(data_path + d)]
 
-    for language in lang_class:
-        os.mkdir('embeddings/' + language)
+    for lang in lang_class:
+        os.mkdir('embeddings/' + lang)
         for i in range(1, 21):
-            create_embedding(language, i)
-
-
-
+            create_embedding(lang, i)
