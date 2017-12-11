@@ -56,7 +56,7 @@ def main():
     one = oh.Onehot([data])
     model = LSTM(one.num_words)
 
-    train_len = 100
+    train_len = 1000
 
     for epoch in range(1000):
         epoch_loss = []
@@ -83,7 +83,7 @@ def main():
                     prediction_vector = model.softmax_answer().value()
                     prediction = one.get_word(prediction_vector)
 
-                    epoch_loss.append(model.train_softmax(one.get_encoding(ans)))
+                    epoch_loss.append(model.train_softmax(one.word_to_index[ans]))
 
                     total += 1.0
                     if ans == prediction:

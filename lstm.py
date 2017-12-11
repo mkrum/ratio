@@ -1,10 +1,11 @@
 import dynet as dy
+import numpy as np
 
 class LSTM(object):
 
     def __init__(self, dimension):
 
-        NUM_LAYERS = 4
+        NUM_LAYERS = 3
         HIDDEN_DIM = 128
         FLAT_HIDDEN = 64
 
@@ -28,7 +29,7 @@ class LSTM(object):
         self.params["word_vec_dim"] = dimension
         self.reset()
 
-        self.trainer = dy.AdamTrainer(self.pc)
+        self.trainer = dy.MomentumSGDTrainer(self.pc, learning_rate=1E-5)
 
     def save(self, path):
         self.pc.save(path)
@@ -84,8 +85,7 @@ class LSTM(object):
     def train_softmax(self, actual):
         prediction = self.softmax_answer()
 
-        self.actual_word.set(actual)
-        loss = dy.squared_distance(prediction, self.actual_word)
+        loss = -dy.log(dy.pick(prediction, actual))
 
         loss.backward()
         self.trainer.update()
