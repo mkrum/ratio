@@ -8,9 +8,8 @@ class Onehot(object):
         for td in tasks_data:
             for data in [td.train_data, td.valid_data, td.test_data]:
                 for story, answers in data:
-                    for line in story:
-                        for word in line:
-                            self.words.add(word)
+                    for word in story:
+                        self.words.add(word)
                     for ans in answers:
                         self.words.add(ans)
 

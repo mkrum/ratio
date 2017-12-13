@@ -21,14 +21,14 @@ class TaskData(object):
                 if '?' in line:
                     _, question, answer, _ = TaskData.parse_question(line)
                     answers.append(answer)
-                    story.append(question)
+                    story.extend(question)
                 else:
                     number, line = TaskData.parse_statement(line)
                     if number == 1 and answers:
                         data.append((story, answers))
                         story = []
                         answers = []
-                    story.append(line)
+                    story.extend(line)
 
             return data
 

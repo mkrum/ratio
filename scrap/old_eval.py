@@ -1,8 +1,8 @@
 import random
 from collections import Counter
 from lstm import LSTM
-import datahandling as dh
-import onehot as oh
+import old_dh as dh
+import old_onehot as oh
 
 def evaluate(model, data, one):
 
@@ -19,24 +19,23 @@ def evaluate(model, data, one):
         print('{}/{}'.format(j, test_len), end='\r')
 
         current_answer = 0
-        for line in story:
-            for word in line:
-                model.read(one.get_encoding(word))
-                if word == '?':
-                    ans = answers[current_answer]
+        for word in story:
+            model.read(one.get_encoding(word))
+            if word == '?':
+                ans = answers[current_answer]
 
-                    occurances[ans] += 1
-                    current_answer += 1
+                occurances[ans] += 1
+                current_answer += 1
 
-                    prediction_vector = model.softmax_answer().value()
-                    prediction = one.get_word(prediction_vector)
+                prediction_vector = model.softmax_answer().value()
+                prediction = one.get_word(prediction_vector)
 
-                    predictions[prediction] += 1
+                predictions[prediction] += 1
 
-                    total += 1.0
-                    if ans == prediction:
-                        correct_predicitons[prediction] += 1
-                        correct += 1.0
+                total += 1.0
+                if ans == prediction:
+                    correct_predicitons[prediction] += 1
+                    correct += 1.0
 
         model.reset()
 
@@ -59,7 +58,8 @@ def main():
     epochs = 1000
     stories = 3
     train_data = data.train_data[:stories]
-    state = None
+    count = 0
+
 
     for epoch in range(epochs):
         epoch_loss = []
@@ -72,45 +72,41 @@ def main():
         random.shuffle(train_data)
 
         for story, answers in train_data:
-            current_answer = 0
             j += 1
             print('{}/{}'.format(j, stories), end='\r')
-            for line in story:
 
-                if '?' in line:
-                    state = model.current_state
+            current_answer = 0
+            for word in story:
+                model.read(one.get_encoding(word))
+                count += 1
 
-                for word in line:
-                    model.read(one.get_encoding(word))
-                    if word == '?':
-                        ans = answers[current_answer]
-                        current_answer += 1
+                if word == '?':
+                    ans = answers[current_answer]
+                    current_answer += 1
 
-                        prediction_vector = model.softmax_answer().value()
-                        prediction = one.get_word(prediction_vector)
+                    prediction_vector = model.softmax_answer().value()
+                    prediction = one.get_word(prediction_vector)
 
-                        epoch_loss.append(model.train_softmax(one.word_to_index[ans]))
+                    epoch_loss.append(model.train_softmax(one.word_to_index[ans]))
 
-                        model.current_state = state
+                    total += 1.0
+                    if ans == prediction:
+                        correct += 1.0
 
-                        total += 1.0
-                        if ans == prediction:
-                            correct += 1.0
-
-                #story_loss = model.backprop()
-                #epoch_loss.append(story_loss)
+            #story_loss = model.backprop()
+            #epoch_loss.append(story_loss)
 
             model.reset()
-
         train_acc = correct/total
 
         loss = sum(epoch_loss) / len(epoch_loss)
         print('Epoch: {} Loss: {} Train Accuracy: {}'.format(epoch, loss, train_acc))
 
-        if epoch % 10 == 0 and False:
+        if epoch % 100 == 0 and False:
             validation_rate = evaluate(model, data.valid_data, one)
             print('Validation Success Rate: {}'.format(validation_rate))
             model.save('saved_models/lstm/epoch-{}'.format(epoch))
+    print(count)
 
     test_rate = evaluate(model, data.test_data, one)
     print('Test Success Rate: {}'.format(test_rate))
