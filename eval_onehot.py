@@ -70,8 +70,8 @@ def main():
     save_path = 'saved_models/{}-{}-{}'.format(model_type, language, task)
     results_path = 'results/{}-{}-{}.txt'.format(model_type, language, task)
      
-    epochs = 3
-    stories = 10
+    epochs = 50
+    stories = 1500
     train_data = data.train_data[:stories]
     state = None
 
