@@ -40,8 +40,9 @@ class LSTM(object):
         self.pc.populate(path)
 
     def read(self, word_vector):
-        self.input_word.set(word_vector)
-        self.current_state = self.current_state.add_input(self.input_word)
+        self.input_words.append(dy.vecInput(self.params['input_dim']))
+        self.input_words[-1].set(word_vector)
+        self.current_state = self.current_state.add_input(self.input_words[-1])
 
     def backprop(self):
         total_loss = dy.esum(self.loss_buffer)
@@ -57,7 +58,7 @@ class LSTM(object):
     def reset(self):
         dy.renew_cg()
         self.current_state = self.builder.initial_state()
-        self.input_word = dy.vecInput(self.params['input_dim'])
+        self.input_words = []
         self.actual_word = dy.vecInput(self.params['input_dim'])
 
         self.W_1 = dy.parameter(self.params['W_1'])
