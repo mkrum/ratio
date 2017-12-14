@@ -5,7 +5,7 @@ class LSTM(object):
     def __init__(self, input_dimension):
 
         NUM_LAYERS = 2
-        HIDDEN_DIM = 100
+        HIDDEN_DIM = 256
         #FLAT_HIDDEN = 64
 
         INPUT_DIM = input_dimension

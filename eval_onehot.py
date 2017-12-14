@@ -1,8 +1,12 @@
+import os
+import sys
 import random
 from collections import Counter
 from lstm import LSTM
+from rnn import RNN
 import datahandling as dh
 import onehot as oh
+
 
 def evaluate(model, data, one):
 
@@ -52,14 +56,27 @@ def evaluate(model, data, one):
     return succes_rate
 
 def main():
-    data = dh.TaskData(1, 'english')
-    one = oh.Onehot([data])
-    model = LSTM(one.num_words)
+    task, language, model_type = sys.argv[1:]
 
-    epochs = 1000
-    stories = 3
+    data = dh.TaskData(task, language)
+    one = oh.Onehot([data])
+
+    if model_type == 'lstm':
+        model = LSTM(one.num_words)
+
+    if model_type == 'rnn':
+        model = RNN(one.num_words)
+     
+    save_path = 'saved_models/{}-{}-{}'.format(model_type, language, task)
+    results_path = 'results/{}-{}-{}.txt'.format(model_type, language, task)
+     
+    epochs = 3
+    stories = 10
     train_data = data.train_data[:stories]
     state = None
+
+    best_epoch = None
+    best_val = 0
 
     for epoch in range(epochs):
         epoch_loss = []
@@ -107,14 +124,20 @@ def main():
         loss = sum(epoch_loss) / len(epoch_loss)
         print('Epoch: {} Loss: {} Train Accuracy: {}'.format(epoch, loss, train_acc))
 
-        if epoch % 10 == 0:
-            validation_rate = evaluate(model, data.valid_data, one)
-            print('Validation Success Rate: {}'.format(validation_rate))
-            model.save('saved_models/lstm/epoch-{}'.format(epoch))
+        validation_rate = evaluate(model, data.valid_data, one)
+        
+        if validation_rate > best_val:
+            model.save(save_path)
+            best_val = validation_rate
 
+        print('Validation Success Rate: {}'.format(validation_rate))
+    
+    model.load(save_path)
     test_rate = evaluate(model, data.test_data, one)
     print('Test Success Rate: {}'.format(test_rate))
 
+    with open(results_path, 'w') as res_file:
+        res_file.write('{}\n{}'.format(best_val, test_rate))
 
 if __name__ == '__main__':
     main()
