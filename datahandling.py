@@ -1,13 +1,24 @@
 class TaskData(object):
 
-    def __init__(self, task, language):
+    def __init__(self, task_str, language):
+
+        self.train_data = []
+        self.test_data = []
+        self.valid_data = []
+
+        for task in task_str.split('-'):
+            self.load_data(task, language)
+
+
+    def load_data(self, task, language):
+        ''' adds the data to train, validation, test '''
         train_filename = 'data/{}/qa{}_train.txt'.format(language, task)
         valid_filename = 'data/{}/qa{}_valid.txt'.format(language, task)
         test_filename = 'data/{}/qa{}_test.txt'.format(language, task)
 
-        self.train_data = self.parse_data(train_filename)
-        self.valid_data = self.parse_data(valid_filename)
-        self.test_data = self.parse_data(test_filename)
+        self.train_data += self.parse_data(train_filename)
+        self.valid_data += self.parse_data(valid_filename)
+        self.test_data += self.parse_data(test_filename)
 
 
     @staticmethod
