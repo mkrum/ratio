@@ -1,5 +1,4 @@
 import dynet as dy
-import numpy as np
 
 class LSTM(object):
 
@@ -32,8 +31,7 @@ class LSTM(object):
         self.params['input_dim'] = input_dimension
         self.reset()
 
-        #self.trainer = dy.MomentumSGDTrainer(self.pc, learning_rate=1E-5)
-        self.trainer = dy.MomentumSGDTrainer(self.pc)
+        self.trainer = dy.AdamTrainer(self.pc)
 
     def save(self, path):
         self.pc.save(path)
@@ -64,9 +62,6 @@ class LSTM(object):
 
         self.W_1 = dy.parameter(self.params['W_1'])
         self.bias_1 = dy.parameter(self.params['bias_1'])
-
-        #self.W_2 = dy.parameter(self.params["W_2"])
-        #self.bias_2 = dy.parameter(self.params["bias_2"])
 
     def answer(self):
         #return self.W_2 * (self.W_1 * self.current_state.output() + self.bias_1) + self.bias_2

@@ -107,7 +107,7 @@ def main():
         loss = sum(epoch_loss) / len(epoch_loss)
         print('Epoch: {} Loss: {} Train Accuracy: {}'.format(epoch, loss, train_acc))
 
-        if epoch % 10 == 0 and False:
+        if epoch % 10 == 0:
             validation_rate = evaluate(model, data.valid_data, one)
             print('Validation Success Rate: {}'.format(validation_rate))
             model.save('saved_models/lstm/epoch-{}'.format(epoch))
