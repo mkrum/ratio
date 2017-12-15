@@ -35,9 +35,11 @@ def train(train_files):
 
 def evaluate(counts, test_files):
     ''' run the model on the test data '''
-    correct = 0
-    total = 0
+    all_correct = 0
+    all_total = 0
     for test_file in test_files:
+        single_correct = 0
+        single_total = 0
         # list of sentences in the current story
         story = []
         with open(test_file) as f:
@@ -73,8 +75,10 @@ def evaluate(counts, test_files):
                                 best_answer = ans
 
                     if best_answer == answer:
-                        correct += 1
-                    total += 1
+                        all_correct += 1
+                        single_correct += 1
+                    all_total += 1
+                    single_total += 1
                 # statement
                 else:
                     # if the id number is 1, start a new story
@@ -82,8 +86,8 @@ def evaluate(counts, test_files):
                     if num == 1:
                         story = []
                     story.append(statement)
-
-    print(correct/total)
+        print('{} accuracy: {}'.format(test_file, single_correct/single_total))
+    print('Combined accuracy: {}'.format(all_correct/all_total))
 
 
 def parse_statement(line):

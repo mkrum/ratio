@@ -4,6 +4,7 @@ class TaskData(object):
 
         self.train_data = []
         self.test_data = []
+        self.test_data_tasks = []
         self.valid_data = []
 
         for task in task_str.split('-'):
@@ -19,6 +20,7 @@ class TaskData(object):
         self.train_data += self.parse_data(train_filename)
         self.valid_data += self.parse_data(valid_filename)
         self.test_data += self.parse_data(test_filename)
+        self.test_data_tasks.append(self.parse_data(test_filename))
 
 
     @staticmethod
