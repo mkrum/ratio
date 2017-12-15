@@ -72,7 +72,6 @@ def main():
      
     epochs = 50
     stories = 1500
-    train_data = data.train_data[:stories]
     state = None
 
     best_epoch = None
@@ -86,9 +85,9 @@ def main():
         correct = 0.0
 
         #randomly shuffle before each epoch
-        random.shuffle(train_data)
+        random.shuffle(data.train_data)
 
-        for story, answers in train_data:
+        for story, answers in data.train_data[:stories]:
             current_answer = 0
             j += 1
             print('{}/{}'.format(j, stories), end='\r')
